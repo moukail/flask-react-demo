@@ -1,0 +1,53 @@
+services:
+  db:
+    image: docker.io/library/postgres:18
+    container_name: db
+    environment:
+      - POSTGRES_PASSWORD=pass_1234
+      - POSTGRES_DB=demo_db
+      - POSTGRES_USER=admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - db:/var/lib/postgresql
+    networks:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Containerfile.dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/var/www/app:Zl
+    depends_on:
+      - db
+    networks:
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Containerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/var/www/app:Zl
+      - node_modules:/var/www/app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - frontend
+
+volumes:
+  db:
+    driver: local
+  node_modules:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge

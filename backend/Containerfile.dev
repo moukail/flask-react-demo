@@ -1,0 +1,16 @@
+FROM docker.io/library/python:3.14-alpine3.23
+
+WORKDIR /var/www/app
+
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 5000
+STOPSIGNAL SIGTERM
+
+USER 1001
+
+#CMD ["flask", "run"]
+CMD ["python", "app.py"]
