@@ -1,3 +1,13 @@
+Podman compose
+======
+```bash
+podman compose -f compose.yml --project-name flask-react up -d --build
+podman compose -f compose.yml --project-name flask-react ps -a
+podman compose -f compose.yml --project-name flask-react logs backend
+podman compose -f compose.yml --project-name flask-react logs frontend
+podman compose -f compose.yml --project-name flask-react down -v
+```
+
 Vitejs
 ======
 ```bash

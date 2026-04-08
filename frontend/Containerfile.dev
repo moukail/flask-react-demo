@@ -3,9 +3,9 @@ FROM docker.io/library/node:25.8-alpine3.23
 VOLUME "/var/www/app/node_modules"
 WORKDIR /var/www/app
 
-COPY package*.json .
+COPY --chown=1001:1001 package*.json .
 RUN npm install
-COPY . .
+COPY --chown=1001:1001 . .
 
 EXPOSE 3000
 STOPSIGNAL SIGTERM
