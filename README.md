@@ -30,3 +30,12 @@ podman run -it --rm -w /var/www/app -v "$(pwd)/frontend:/var/www/app:z" \
 podman run -it --rm -w /var/www/app -v "$(pwd)/frontend:/var/www/app:z" \
  docker.io/library/node:25.8-alpine3.23 npx vitest run
 ```
+
+Flask-Migrate
+============
+```bash
+podman compose -f compose.dev.yml exec db createdb -U admin mytv_db
+podman exec -it python-test-backend-1 flask db init
+podman exec -it python-test-backend-1 flask db migrate -m "initial migration"
+podman exec -it python-test-backend-1 flask db upgrade
+```
