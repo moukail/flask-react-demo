@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-test-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-test-backend
+  template:
+    metadata:
+      labels:
+        app: python-test-backend
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - name: python-test-backend
+          image: docker.io/moukail/flask-demo:1.0.1
+          ports:
+            - containerPort: 8081
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "10m"
+            limits:
+              memory: "100Mi"
+              cpu: "100m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-test-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-test-frontend
+  template:
+    metadata:
+      labels:
+        app: python-test-frontend
+    spec:
+      imagePullSecrets:
+        - name: docker-secret
+      containers:
+        - name: python-test-frontend
+          image: docker.io/moukail/react-frontend:1.0.6
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "10m"
+            limits:
+              memory: "100Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-test-frontend
+spec:
+  selector:
+    app: python-test-frontend
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080

@@ -1,0 +1,143 @@
+schemaVersion: 2.2.2
+metadata:
+  name: flask-react-demo
+
+starterProjects:
+  - name: flask-react-demo
+    git:
+      remotes:
+        origin: https://github.com/moukail/flask-react-demo.git
+      checkoutFrom:
+        revision: main
+
+components:
+  - name: backend
+    container:
+      image: registry.access.redhat.com/ubi9/python-312:9.7
+      args: ['tail', '-f', '/dev/null']
+      mountSources: true
+      memoryLimit: 256Mi
+      memoryRequest: 128Mi
+      cpuRequest: "200m"
+      endpoints:
+        - name: http-8081
+          targetPort: 8081
+        - name: debug
+          targetPort: 5678
+          exposure: none
+      env:
+        - name: DEBUG_PORT
+          value: "5678"
+  
+  - name: frontend
+    container:
+      image: registry.access.redhat.com/ubi9/nodejs-24-minimal:9.7
+      args: ['tail', '-f', '/dev/null']
+      memoryLimit: 1024Mi
+      memoryRequest: 256Mi
+      cpuRequest: "200m"
+      mountSources: true  
+      endpoints:
+        - name: http-8080
+          targetPort: 8080
+          exposure: public
+      env:
+        - name: NODE_ENV
+          value: development
+        - name: VITE_API_URL      # proxy to your Flask backend
+          value: http://localhost:8080
+  
+  - name: backend-outerloop-build
+    image:
+      imageName: docker.io/moukail/flask-demo:1.0.1
+      dockerfile:
+        uri: backend/Containerfile
+        buildContext: ${PROJECT_SOURCE}/backend
+        rootRequired: false
+   
+  - name: frontend-outerloop-build
+    image:
+      imageName: docker.io/moukail/react-frontend:1.0.6
+      dockerfile:
+        uri: frontend/Containerfile
+        buildContext: ${PROJECT_SOURCE}/frontend
+        rootRequired: false
+
+  - name: outerloop-kubernetes-deploy
+    kubernetes:
+      uri: kubernetes/deploy.yml
+      endpoints:
+        - name: http-8082
+          targetPort: 8082
+
+commands:
+  - id: backend-build
+    exec:
+      commandLine: pip install -r requirements.txt
+      component: backend
+      workingDir: ${PROJECT_SOURCE}/backend
+      group:
+        kind: build
+  - id: backend-run
+    exec:
+      commandLine: 'python app.py'
+      component: backend
+      workingDir: ${PROJECT_SOURCE}/backend
+      group:
+        kind: run
+  - id: backend-debug
+    exec:
+      commandLine: 'pip install debugpy && python -m debugpy --listen 0.0.0.0:${DEBUG_PORT} app.py'
+      component: backend
+      workingDir: ${PROJECT_SOURCE}/backend
+      group:
+        kind: debug
+        
+  - id: frontend-build
+    exec:
+      commandLine: npm install
+      component: frontend
+      workingDir: ${PROJECT_SOURCE}/frontend
+      group:
+        kind: build
+  - id: frontend-run
+    exec:
+      commandLine: npm run dev
+      component: frontend
+      workingDir: ${PROJECT_SOURCE}/frontend
+      group:
+        kind: run
+  - id: frontend-test
+    exec:
+      component: frontend
+      commandLine: npm test
+      workingDir: ${PROJECT_SOURCE}/frontend
+      group:
+        kind: test
+        isDefault: true      
+  - id: build
+    composite:
+      commands:
+        - backend-build
+        - frontend-build
+      group:
+        kind: build
+        isDefault: true
+  - id: run
+    composite:
+      commands:
+        - backend-run
+        - frontend-run
+      group:
+        kind: run
+        isDefault: true
+  - id: backend-build-image
+    apply:
+      component: backend-outerloop-build
+  - id: backend-deploy
+    composite:
+      commands:
+        - backend-build-image
+      group:
+        kind: deploy
+        isDefault: true
